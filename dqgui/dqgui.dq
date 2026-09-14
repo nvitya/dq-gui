@@ -1,0 +1,48 @@
+
+use dqgui/ddgfx/openglutils
+use dqgui/ddgfx/ddgfx
+
+object OWidget:
+public
+    parent : OWidget
+    scale  : float32 = 1.0
+    w      : float32 = 1
+    h      : float32 = 1
+    
+
+    func *Create(aparent : OWidget):
+    endfunc
+endobject
+
+object OWindow(OWidget):
+    scene : ODdScene
+    m_title : str
+
+    func *Create(awidth : int, aheight : int, atitle : rostr):
+        use *
+
+        m_title = atitle
+        w = awidth
+        h = aheight
+
+        scene = new ODdScene(nil)
+    endfunc
+
+    func Show():
+        use *
+        // DdGfx uses shaders, vertex-array objects, and vertex buffers.  A
+        // compatibility profile keeps the legacy GL_ALPHA text texture format.
+        GlfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3)
+        GlfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
+        GlfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE)
+
+        var window : pointer = GlfwCreateWindow(original_width, original_height, 'DdGfx test 1 for DQ', nil, nil)
+        if window == nil:
+            GlfwTerminate()
+            raise EOpenGl('Could not create the OpenGL window')
+        endif
+
+        GlfwMakeContextCurrent(window)
+        GlfwSwapInterval(1)
+    endfunc
+endobject
