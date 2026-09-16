@@ -6,114 +6,82 @@ use print
 use math
 use dqgui/ddgfx/openglutils
 use dqgui/ddgfx/ddgfx
+use dqgui/widget
 use dqgui
-
-const original_width  : int = 800
-const original_height : int = 600
 
 //-----------------------------------------------------------------------------
 
-object OWidgetFrame(ODrawGroup):
+object OTestWidget(OWidget):
 protected
     rectverts : [4]SDdVertex
     rectshape : OShape
     rectoutl  : OShape
 public
+    func *Create(parent : OWidget, aminw : float32, aminh : float32):
+        inherited Create(parent, aminw, aminh)
 
-    scale : float32 = 1.0
-    w     : float32 = 1
-    h     : float32 = 1
-
-    func *Create(parent : ODrawable):
-        inherited Create(parent)
+        margin.left  = 10
+        margin.right = 10
 
         rectverts = [ {0, 0}, {1, 0}, {1, 1}, {0, 1} ]
 
-        rectshape = new OShape(self)
+        rectshape = new OShape(self.dg)
         rectshape.AddPrimitive(@.GL_TRIANGLE_FAN, rectverts)
-        rectshape.alpha = 0.3
+        rectshape.color = {0.5, 1.0, 0.5, 0.3}
+        //rectshape.alpha = 0.3
 
-        rectoutl = new OShape(self)
+        rectoutl = new OShape(self.dg)
         rectoutl.AddPrimitive(@.GL_LINE_LOOP, rectverts)
         rectoutl.color = {1.0, 0.0, 0.0, 1.0}
+    endfunc
+
+    func UpdateLayout()  [[override]]:
+        //
+        dg.x = self.x
+        dg.y = self.y
+        dg.scalex = width
+        dg.scaley = height
     endfunc
 endobject
 
 object OMainWindow(OWindow):
-    wf1 : OWidgetFrame
-    wf2 : OWidgetFrame
-
-    rectverts : [4]SDdVertex
-    rectshape : OShape
-
-    original_shape : OShape
-    original_group : ODrawGroup
-    group_clones   : [*]OClonedGroup
-    triangle : [3]SDdVertex
-
+    wg1 : OTestWidget
+    wg2 : OTestWidget
 
     func *Create(awidth : int, aheight : int, atitle : rostr):
-        use *
-
         inherited Create(awidth, aheight, atitle)
 
-        triangle = [ {0,0}, {1, 0}, {1,1} ]
+        wg1 = new OTestWidget(self, 200, 50)
+        wg2 = new OTestWidget(self, 300, 40)
+    endfunc
 
-        original_shape = new OShape(nil)
-        original_shape.AddPrimitive(GL_TRIANGLES, triangle)
-        original_shape.scalex = 100
-        original_shape.scaley = 100
-        original_shape.alpha = 0.5
-        original_shape.color = {1.0, 0.0, 0.0, 1.0}
+    func UpdateLayout()  [[override]]:
+        if children.length < 1:
+            return
+        endif
 
-        original_group = new ODrawGroup(nil)
-        original_group.CloneShape(original_shape)
+        var lx : float32 = 0
+        var ly : float32 = 0
 
-        var clone_shape : OClonedShape
-        clone_shape = original_group.CloneShape(original_shape)
-        clone_shape.x += 50
-        clone_shape.rotation = 20
-        clone_shape.color = {0.0, 1.0, 0.0, 0.4}
+        var cw : float32 = width / children.length
 
-        clone_shape = original_group.CloneShape(original_shape)
-        clone_shape.x += 70
-        clone_shape.rotation = 30
-        clone_shape.color = {0.0, 0.0, 1.0, 0.4}
+        for w :? in children:
+            w.x = lx + w.margin.left
+            w.y = ly + w.margin.top
+            w.width = cw - w.margin.left - w.margin.right
+            w.height = w.minh
+            lx += cw
 
-        var clone_group : OClonedGroup
-        clone_group = scene.root.CloneGroup(original_group)
-        clone_group.x = 100
-        clone_group.y = 100
-        group_clones.Append(clone_group)
-
-        clone_group = scene.root.CloneGroup(original_group)
-        clone_group.x = 200
-        clone_group.y = 150
-        clone_group.alpha = 0.5
-        group_clones.Append(clone_group)
-
-        clone_group = scene.root.CloneGroup(original_group)
-        clone_group.x = 300
-        clone_group.y = 170
-        clone_group.alpha = 0.3
-        group_clones.Append(clone_group)
-
-        //wf1 = new OWidgetFrame(scene.root)
-        //wf1.x = 10
-        //wf1.y = 10
-        //wf1.scalex = 200
-        //wf1.scaley = 50
-        //wf1.color = {1.0, 0.0, 0.0, 0.4}
-
-        //wf2 = new OWidgetFrame(self)
-        //wf2.x = 400
-        //wf2.y = 10
-        //wf2.scalex = 300
-        //wf2.scaley = 50
+            w.UpdateLayout()
+        endfor
     endfunc
 
     func OnResize(awidth : int32, aheight : int32)  [[override]]:
-        @.PrintLn('Resize: {}, {}', [awidth, aheight])
+        //@.PrintLn('Resize: {}, {}', [awidth, aheight])
+        width  = awidth
+        height = aheight
+
+        UpdateLayout()
     endfunc
 
     func OnKey(key : int32, scancode : int32, action : int32, mods : int32)  [[override]]:
@@ -140,6 +108,7 @@ func *Main():
 
     var win = new OMainWindow(800, 600, 'DQGUI Layout Test')
     win.Show()
+    win.UpdateLayout()
 
     gui_app.Run()
 endfunc

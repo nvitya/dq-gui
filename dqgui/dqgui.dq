@@ -98,7 +98,7 @@ endfunc
 
 
 func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
-    inherited Create(nil)
+    inherited Create(nil, awidth, aheight)
     m_title = atitle
     width  = awidth
     height = aheight
@@ -107,12 +107,12 @@ func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
 
     scene = new ODdScene()
     scene.background = {0.2, 0.2, 0.2, 1.0}
-    scene.root.AddChild(self) // must be removed before deleting the scene !
+    scene.root.AddChild(self.dg)  // must be removed before deleting the scene !
 endfunc
 
 func OWindow.*Destroy():
     Hide()
-    scene.root.RemoveChild(self)  // remove self first, otherwise the scene destroy will delete self
+    scene.root.RemoveChild(self.dg)  // remove self first, otherwise the scene destroy will delete self
     delete scene
     inherited Destroy()
 endfunc

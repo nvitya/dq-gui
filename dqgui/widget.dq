@@ -9,9 +9,15 @@ struct SSpacing:
     bottom : float32
 endstruct
 
-object OWidget(ODrawGroup):
+object OWidget:
 public
-    parent : OWidget
+    parent   : OWidget
+    children : [*]OWidget
+    dg       : ODrawGroup
+
+    x      : float32
+    y      : float32
+
     scale  : float32 = 1
     minw   : float32 = 20
     minh   : float32 = 10
@@ -23,8 +29,29 @@ public
     width  : float32
     height : float32
 
-    func *Create(aparent : OWidget):
-        inherited Create(aparent)
-    endfunc
+    func *Create(aparent : OWidget, aminw : float32, aminh : float32) ..
+    func *Destroy() ..
+
+    func UpdateLayout()  [[virtual]]:  endfunc
 endobject
 
+implementation
+
+func OWidget.*Create(aparent : OWidget, aminw : float32, aminh : float32):
+    parent = aparent
+    minw   = aminw
+    minh   = aminh
+    if aparent <> nil:
+        dg = new ODrawGroup(aparent.dg)
+        aparent.children.Append(self)
+    else:
+        dg = new ODrawGroup(nil)
+    endif
+endfunc
+
+func OWidget.*Destroy():
+    while children.length > 0:
+        delete children.Pop()
+    endwhile
+    delete dg
+endfunc
