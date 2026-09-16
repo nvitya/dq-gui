@@ -35,6 +35,8 @@ object OGuiApp:
     initialized : bool = false
     winlist     : [*]OWindow
 
+    shared_ctx_win : TGlfwWindow
+
     func *Create() ..
     func *Destroy() ..
 
@@ -54,24 +56,6 @@ func *ModuleInit():
 endfunc
 
 //-----------------------------------------------------------------------------
-
-func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
-    inherited Create(nil)
-    m_title = atitle
-    width  = awidth
-    height = aheight
-
-    scene = new ODdScene()
-    scene.background = {0.2, 0.2, 0.2, 1.0}
-    scene.root.AddChild(self) // must be removed
-endfunc
-
-func OWindow.*Destroy():
-    Hide()
-    scene.root.RemoveChild(self)  // remove self first, otherwise the scene destroy will delete self
-    delete scene
-    inherited Destroy()
-endfunc
 
 func OWinFromGlfw(window : TGlfwWindow) -> OWindow  [[inline]]:
     result = OWindow(GlfwGetWindowUserPointer(window))
@@ -112,6 +96,25 @@ func GlfwCbChar(window : TGlfwWindow, codepoint : uint32):
     w.OnChar(codepoint)
 endfunc
 
+
+func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
+    inherited Create(nil)
+    m_title = atitle
+    width  = awidth
+    height = aheight
+
+    scene = new ODdScene()
+    scene.background = {0.2, 0.2, 0.2, 1.0}
+    //scene.root.AddChild(self) // must be removed
+endfunc
+
+func OWindow.*Destroy():
+    Hide()
+    scene.root.RemoveChild(self)  // remove self first, otherwise the scene destroy will delete self
+    delete scene
+    inherited Destroy()
+endfunc
+
 func OWindow.Show():
     use *
     if m_handle <> nil:
@@ -120,10 +123,14 @@ func OWindow.Show():
 
     gui_app.Init()  // checks if already initialized
 
-    m_handle = GlfwCreateWindow(Round(width), Round(height), m_title.pchar, nil, nil)
+    m_handle = GlfwCreateWindow(Round(width), Round(height), m_title.pchar, nil, gui_app.shared_ctx_win)
     if m_handle == nil:
         raise EOpenGl('Could not create the OpenGL window')
     endif
+
+    GlfwMakeContextCurrent(m_handle)
+    GlfwSwapInterval(1)
+
     // register the self object for the callbacks
     GlfwSetWindowUserPointer(m_handle, pointer(self))
 
@@ -152,13 +159,12 @@ func OWindow.Draw():
     if m_handle == nil:
         raise EGuiUse('Drawing invisible window, call Show() first')
     endif
-    var width  : int32 = 0
-    var height : int32 = 0
-    GlfwGetFramebufferSize(m_handle, %width, %height)
 
     GlfwMakeContextCurrent(m_handle)
 
-    GlfwSwapInterval(1) // !!!!!
+    var width  : int32 = 0
+    var height : int32 = 0
+    GlfwGetFramebufferSize(m_handle, %width, %height)
 
     scene.BeginFrame(width, height)  // calls draws
     scene.EndFrame(m_handle)         // calls swap, might block
@@ -202,8 +208,17 @@ func OGuiApp.Init():
     GlfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
     GlfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE)
 
-    GlEnable(GL_BLEND)
-    GlBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    // create an invisible window for context sharing
+    GlfwWindowHint(GLFW_VISIBLE, GLFW_FALSE)
+    shared_ctx_win = GlfwCreateWindow(1, 1, 'dqgui-share', nil, nil)
+    if shared_ctx_win == nil:
+        raise EOpenGl('Could not create OpenGL share context')
+    endif
+
+    GlfwMakeContextCurrent(shared_ctx_win)
+
+    // Restore the default for subsequently created application windows.
+    GlfwWindowHint(GLFW_VISIBLE, GLFW_TRUE)
 
     initialized = true
 endfunc
@@ -235,6 +250,11 @@ func OGuiApp.Terminate():
     for w :? in winlist:
         w.Hide()
     endfor
+
+    if shared_ctx_win <> nil:
+        @.GlfwDestroyWindow(shared_ctx_win)
+        shared_ctx_win = nil
+    endif
 
     @.GlfwTerminate()
     initialized = false

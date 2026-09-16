@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "dq: build configured target",
+      "type": "shell",
+      "command": "dq-comp",
+      "args": [
+        "-g",
+        "-O0",
+        "${config:dq.debugTarget}.dq",
+        "-o",
+        "${config:dq.debugTarget}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

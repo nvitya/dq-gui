@@ -258,6 +258,19 @@ func DdMatProjection(width : int, height : int) -> SDdMatrix:
     result.values[5] =  1.0 - 0.5 / height
 endfunc
 
+func GetShaderInfoLog(shader : uint32) -> str:
+    var log_length : int32 = 0
+    GlGetShaderiv(shader, GL_INFO_LOG_LENGTH, %log_length)
+
+    result = ''
+    if log_length > 1:
+        result.SetLength(log_length, char(0))
+
+        var written : int32 = 0
+        GlGetShaderInfoLog(shader, log_length, %written, result.pchar)
+        result.SetLength(written, char(0))
+    endif
+endfunc
 
 func DdCompileShader(shader_type : uint32, source : strslice) -> uint32:
     result = GlCreateShader(shader_type)
@@ -270,10 +283,26 @@ func DdCompileShader(shader_type : uint32, source : strslice) -> uint32:
     var status : int32 = 0
     GlGetShaderiv(result, GL_COMPILE_STATUS, %status)
     if status == 0:
+        var msg : str = GetShaderInfoLog(result)
         GlDeleteShader(result)
-        result = 0
+        raise EOpenGl('Error compiling {} shader: {}', [iif(shader_type == GL_VERTEX_SHADER, 'vertex', 'fragment'), msg])
     endif
 endfunc
+
+func DdProgramInfoLog(program : uint32) -> str:
+    var log_length : int32 = 0
+    GlGetProgramiv(program, GL_INFO_LOG_LENGTH, %log_length)
+
+    result = ''
+    if log_length > 1:
+        result.SetLength(uint(log_length), char(0))
+
+        var written : int32 = 0
+        GlGetProgramInfoLog(program, log_length, %written, result.pchar)
+        result.SetLength(uint(written), char(0))
+    endif
+endfunc
+
 
 //-----------------------------------------------------------------------------
 
@@ -297,9 +326,8 @@ func OColorProgram.*Create():
         }
         """
     )
-    if vertex_shader == 0 or fragment_shader == 0:
-        return
-    endif
+
+    // exceptions are created
 
     program = GlCreateProgram()
     var position_name : str = 'a_Position'
@@ -311,9 +339,9 @@ func OColorProgram.*Create():
     var status : int32 = 0
     GlGetProgramiv(program, GL_LINK_STATUS, %status)
     if status == 0:
+        var msg : str = DdProgramInfoLog(program)
         GlDeleteProgram(program)
-        program = 0
-        return
+        raise EOpenGl('Color shader program linking: {}', [msg])
     endif
 
     matrix_location = GlGetUniformLocation(program, 'u_MVPMatrix')
@@ -476,8 +504,8 @@ endfunc
 
 func ODrawable.Matrix() -> SDdMatrix:
     var radians : float64 = rotation * 3.141592653589793 / 180.0
-    var cosine : float32  = @math.Cos(radians)
-    var sine : float32    = @math.Sin(radians)
+    var cosine  : float32 = @math.Cos(radians)
+    var sine    : float32 = @math.Sin(radians)
 
     result.values[0] = scalex * cosine
     result.values[1] = -scaley * sine
@@ -921,22 +949,31 @@ endfunc
 //-----------------------------------------------------------------------------
 
 func ODdScene.*Create():
-    use *
+    use .
     root = new ODrawGroup(nil)
     projection = DdMatIdentity()
-    g_colorProgram = new OColorProgram()
-    g_textureProgram = new OTextureProgram()
 endfunc
 
 func ODdScene.*Destroy():
     delete root
     use .
-    delete g_textureProgram = nil
-    delete g_colorProgram = nil
+    //delete g_textureProgram = nil
+    //delete g_colorProgram = nil
 endfunc
 
 func ODdScene.BeginFrame(width : int, height : int):
     use *
+
+    if g_colorProgram == nil:
+        g_colorProgram = new OColorProgram()
+    endif
+    if g_textureProgram == nil:
+        g_textureProgram = new OTextureProgram()
+    endif
+
+    GlEnable(GL_BLEND)
+    GlBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
     GlViewport(0, 0, width, height)
     projection = DdMatProjection(width, height)
     GlClearColor(background.r, background.g, background.b, background.a)

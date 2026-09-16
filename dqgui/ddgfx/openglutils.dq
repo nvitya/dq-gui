@@ -18,6 +18,7 @@ const(int32):
     GLFW_CONTEXT_VERSION_MINOR = 0x00022003
     GLFW_OPENGL_PROFILE        = 0x00022008
     GLFW_OPENGL_COMPAT_PROFILE = 0x00032002
+    GLFW_VISIBLE               = 0x00020004
 endconst
 
 const(uint32):
@@ -39,11 +40,15 @@ const(uint32):
     GL_ARRAY_BUFFER         = 0x00008892
     GL_STATIC_DRAW          = 0x000088E4
     GL_FLOAT                = 0x00001406
+    GL_TEXTURE0             = 0x000084C0
+endconst
+
+const(uint32):
     GL_VERTEX_SHADER        = 0x00008B31
     GL_FRAGMENT_SHADER      = 0x00008B30
     GL_COMPILE_STATUS       = 0x00008B81
     GL_LINK_STATUS          = 0x00008B82
-    GL_TEXTURE0             = 0x000084C0
+    GL_INFO_LOG_LENGTH      = 0x00008B84
 endconst
 
 const(int32):
@@ -144,9 +149,11 @@ func GlDeleteShader(shader : uint32) [[external('glDeleteShader')]] ..
 func GlShaderSource(shader : uint32, count : int32, strings : ^^char, lengths : ^int32) [[external('glShaderSource')]] ..
 func GlCompileShader(shader : uint32) [[external('glCompileShader')]] ..
 func GlGetShaderiv(shader : uint32, pname : uint32, value : ^int32) [[external('glGetShaderiv')]] ..
+func GlGetShaderInfoLog(shader : uint32, buf_size : int32, length : ^int32, info_log : ^char)  [[external('glGetShaderInfoLog')]] ..
 func GlAttachShader(program : uint32, shader : uint32) [[external('glAttachShader')]] ..
 func GlLinkProgram(program : uint32) [[external('glLinkProgram')]] ..
 func GlGetProgramiv(program : uint32, pname : uint32, value : ^int32) [[external('glGetProgramiv')]] ..
+func GlGetProgramInfoLog(program : uint32, buf_size : int32, length : ^int32, info_log : ^char)  [[external('glGetProgramInfoLog')]] ..
 func GlBindAttribLocation(program : uint32, index : uint32, name : ^char) [[external('glBindAttribLocation')]] ..
 func GlGetUniformLocation(program : uint32, name : ^char) -> int32 [[external('glGetUniformLocation')]] ..
 func GlUniformMatrix3fv(location : int32, count : int32, transpose : uint8, value : ^float32) [[external('glUniformMatrix3fv')]] ..

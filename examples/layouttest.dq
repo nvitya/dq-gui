@@ -39,31 +39,79 @@ public
     endfunc
 endobject
 
-#if false
-func OTestScene.*Create(window : pointer):
-    inherited Create(window)
-
-    use *
-    background = {0.2, 0.2, 0.2, 1.0}
-
-    w1 = new OWidget(root)
-    w1.x = 10
-    w1.y = 10
-    w1.scalex = 200
-    w1.scaley = 50
-    //w1.color = {1.0, 0.0, 0.0, 0.4}
-
-    w2 = new OWidget(root)
-    w2.x = 400
-    w2.y = 10
-    w2.scalex = 300
-    w2.scaley = 50
-    //w2.color = {0.0, 1.0, 0.0, 0.4}
-
-endfunc
-#endif
-
 object OMainWindow(OWindow):
+    wf1 : OWidgetFrame
+    wf2 : OWidgetFrame
+
+    rectverts : [4]SDdVertex
+    rectshape : OShape
+
+    original_shape : OShape
+    original_group : ODrawGroup
+    group_clones   : [*]OClonedGroup
+    triangle : [3]SDdVertex
+
+
+    func *Create(awidth : int, aheight : int, atitle : rostr):
+        use *
+
+        inherited Create(awidth, aheight, atitle)
+
+        triangle = [ {0,0}, {1, 0}, {1,1} ]
+
+        original_shape = new OShape(nil)
+        original_shape.AddPrimitive(GL_TRIANGLES, triangle)
+        original_shape.scalex = 100
+        original_shape.scaley = 100
+        original_shape.alpha = 0.5
+        original_shape.color = {1.0, 0.0, 0.0, 1.0}
+
+        original_group = new ODrawGroup(nil)
+        original_group.CloneShape(original_shape)
+
+        var clone_shape : OClonedShape
+        clone_shape = original_group.CloneShape(original_shape)
+        clone_shape.x += 50
+        clone_shape.rotation = 20
+        clone_shape.color = {0.0, 1.0, 0.0, 0.4}
+
+        clone_shape = original_group.CloneShape(original_shape)
+        clone_shape.x += 70
+        clone_shape.rotation = 30
+        clone_shape.color = {0.0, 0.0, 1.0, 0.4}
+
+        var clone_group : OClonedGroup
+        clone_group = scene.root.CloneGroup(original_group)
+        clone_group.x = 100
+        clone_group.y = 100
+        group_clones.Append(clone_group)
+
+        clone_group = scene.root.CloneGroup(original_group)
+        clone_group.x = 200
+        clone_group.y = 150
+        clone_group.alpha = 0.5
+        group_clones.Append(clone_group)
+
+        clone_group = scene.root.CloneGroup(original_group)
+        clone_group.x = 300
+        clone_group.y = 170
+        clone_group.alpha = 0.3
+        group_clones.Append(clone_group)
+
+        //wf1 = new OWidgetFrame(scene.root)
+        //wf1.x = 10
+        //wf1.y = 10
+        //wf1.scalex = 200
+        //wf1.scaley = 50
+        //wf1.color = {1.0, 0.0, 0.0, 0.4}
+
+        //wf2 = new OWidgetFrame(self)
+        //wf2.x = 400
+        //wf2.y = 10
+        //wf2.scalex = 300
+        //wf2.scaley = 50
+    endfunc
+
     func OnResize(awidth : int32, aheight : int32)  [[override]]:
         @.PrintLn('Resize: {}, {}', [awidth, aheight])
     endfunc
@@ -85,25 +133,15 @@ object OSecondWindow(OWindow):
 
 endobject
 
-
 //-----------------------------------------------------------------------------
 
 func *Main():
     PrintLn('DQGUI Layout Test')
 
+    gui_app.Init()
+
     var win = new OMainWindow(800, 600, 'DQGUI Layout Test')
     win.Show()
 
-    var win2 = new OSecondWindow(400, 300, 'Second Window')
-    win2.Show()
-
     gui_app.Run()
-
-/*
-    while not win.ShouldClose():
-        win.Draw()
-        win.PollEvents()
-    endwhile
-*/
-    //gui_app.Terminate()
 endfunc

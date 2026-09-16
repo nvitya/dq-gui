@@ -1,0 +1,17 @@
+{
+  "dq.debugTarget": "examples/layouttest",
+  "dq.debugCwd":    "examples",
+
+  "files.watcherExclude": {
+    "**/build-cross/**": true,
+    "**/sysroots/**": true
+  },
+  "files.exclude": {
+    "**/build-cross/**": true,
+    "**/sysroots/**": true
+  },
+  "search.exclude": {
+    "**/build-cross/**": true,
+    "**/sysroots/**": true
+  }
+}
