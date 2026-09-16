@@ -1,48 +1,209 @@
 
 use dqgui/ddgfx/openglutils
 use dqgui/ddgfx/ddgfx
+use ./widget
 
-object OWidget:
-public
-    parent : OWidget
-    scale  : float32 = 1.0
-    w      : float32 = 1
-    h      : float32 = 1
-    
+var gui_initialized : bool = false
 
-    func *Create(aparent : OWidget):
-    endfunc
+object EGuiUse(Exception):
 endobject
 
 object OWindow(OWidget):
-    scene : ODdScene
     m_title : str
+    scene   : ODdScene
 
-    func *Create(awidth : int, aheight : int, atitle : rostr):
-        use *
+    m_handle : pointer
 
-        m_title = atitle
-        w = awidth
-        h = aheight
+    func *Create(awidth : int, aheight : int, atitle : rostr) ..
+    func *Destroy() ..
+    func Show() ..
+    func Hide() ..
+    func Draw() ..
+    func ShouldClose() -> bool ..
+    func PollEvents() ..
+endobject
 
-        scene = new ODdScene(nil)
-    endfunc
+object OGuiApp:
+    initialized : bool = false
+    winlist     : [*]OWindow
 
-    func Show():
-        use *
-        // DdGfx uses shaders, vertex-array objects, and vertex buffers.  A
-        // compatibility profile keeps the legacy GL_ALPHA text texture format.
-        GlfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3)
-        GlfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
-        GlfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE)
+    func *Create() ..
+    func *Destroy() ..
 
-        var window : pointer = GlfwCreateWindow(original_width, original_height, 'DdGfx test 1 for DQ', nil, nil)
-        if window == nil:
-            GlfwTerminate()
-            raise EOpenGl('Could not create the OpenGL window')
+    func Init() ..
+    func Terminate() ..
+    func Run() ..
+    func AddWindow(win : OWindow) ..
+    func RemoveWindow(win : OWindow) ..
+endobject
+
+var gui_app : OGuiApp
+
+implementation
+
+func *ModuleInit():
+    gui_app = new OGuiApp()
+endfunc
+
+//-----------------------------------------------------------------------------
+
+func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
+    inherited Create(nil)
+    m_title = atitle
+    width  = awidth
+    height = aheight
+
+    scene = new ODdScene()
+    scene.background = {0.2, 0.2, 0.2, 1.0}
+    scene.root.AddChild(self) // must be removed
+endfunc
+
+func OWindow.*Destroy():
+    Hide()
+    scene.root.RemoveChild(self)  // remove self first, otherwise the scene destroy will delete self
+    delete scene
+    inherited Destroy()
+endfunc
+
+func OWindow.Show():
+    if m_handle <> nil:
+        return
+    endif
+
+    @.gui_app.Init()  // checks if already initialized
+
+    m_handle = @.GlfwCreateWindow(Round(width), Round(height), m_title.pchar, nil, nil)
+    if m_handle == nil:
+        raise EOpenGl('Could not create the OpenGL window')
+    endif
+
+    @.gui_app.AddWindow(self)
+endfunc
+
+func OWindow.Hide():
+    if m_handle <> nil:
+        @.GlfwDestroyWindow(m_handle)
+        m_handle = nil
+    endif
+
+    @.gui_app.RemoveWindow(self)
+endfunc
+
+func OWindow.Draw():
+    use openglutils
+    if m_handle == nil:
+        raise EGuiUse('Drawing invisible window, call Show() first')
+    endif
+    var width  : int32 = 0
+    var height : int32 = 0
+    GlfwGetFramebufferSize(m_handle, %width, %height)
+
+    GlfwMakeContextCurrent(m_handle)
+
+    GlfwSwapInterval(1) // !!!!!
+
+    scene.BeginFrame(width, height)  // calls draws
+    scene.EndFrame(m_handle)         // calls swap, might block
+endfunc
+
+func OWindow.ShouldClose() -> bool:
+    if m_handle == nil:
+        raise EGuiUse('Windows is not visible, call Show() first')
+    endif
+    return @.GlfwWindowShouldClose(m_handle) <> @.GLFW_FALSE
+endfunc
+
+func OWindow.PollEvents():
+    @.GlfwPollEvents()
+endfunc
+
+//-----------------------------------------------------------------------------
+
+func OGuiApp.*Create():
+
+endfunc
+
+func OGuiApp.*Destroy():
+
+endfunc
+
+func OGuiApp.Init():
+    use openglutils
+
+    if initialized:
+        return
+    endif
+
+    if GlfwInit() == GLFW_FALSE:
+        raise EOpenGl('Could not initialize GLFW')
+    endif
+
+    // DdGfx uses shaders, vertex-array objects, and vertex buffers.  A
+    // compatibility profile keeps the legacy GL_ALPHA text texture format.
+    GlfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3)
+    GlfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
+    GlfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE)
+
+    GlEnable(GL_BLEND)
+    GlBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+    initialized = true
+endfunc
+
+func OGuiApp.AddWindow(win : OWindow):
+    if not initialized:
+        Init()
+    endif
+    if winlist.IndexOf(win) < 0:
+        winlist.Append(win)
+    endif
+endfunc
+
+func OGuiApp.RemoveWindow(win : OWindow):
+    if not initialized:
+        Init()
+    endif
+    var i : int = winlist.IndexOf(win)
+    if i >= 0:
+        winlist.Delete(i)
+    endif
+endfunc
+
+func OGuiApp.Terminate():
+    if not initialized:
+        return
+    endif
+
+    for w :? in winlist:
+        w.Hide()
+    endfor
+
+    @.GlfwTerminate()
+    initialized = false
+endfunc
+
+func OGuiApp.Run():
+    use openglutils
+    while true:
+        GlfwPollEvents()
+
+        var i : int = 0
+        while i < winlist.length:
+            var w : OWindow = winlist[i]
+            if w.ShouldClose():
+                w.Hide()  // this removes from the winlist !
+            else:
+                w.Draw()
+                i += 1
+            endif
+        endwhile
+
+        if winlist.length <= 0:
+            break
         endif
 
-        GlfwMakeContextCurrent(window)
-        GlfwSwapInterval(1)
-    endfunc
-endobject
+        GlfwWaitEventsTimeout(0.250)
+    endwhile
+
+    Terminate()
+endfunc

@@ -1,0 +1,95 @@
+// GLFW version of /workvc/ddgfx/tests/test1/formmain.pas.
+// It demonstrates an original shape, three cloned shapes, and three cloned
+// groups animated independently within a DdGfx scene.
+
+use print
+use math
+use dqgui/ddgfx/openglutils
+use dqgui/ddgfx/ddgfx
+use dqgui
+
+const original_width  : int = 800
+const original_height : int = 600
+
+//-----------------------------------------------------------------------------
+
+object OWidgetFrame(ODrawGroup):
+protected
+    rectverts : [4]SDdVertex
+    rectshape : OShape
+    rectoutl  : OShape
+public
+
+    scale : float32 = 1.0
+    w     : float32 = 1
+    h     : float32 = 1
+
+    func *Create(parent : ODrawable):
+        inherited Create(parent)
+
+        rectverts = [ {0, 0}, {1, 0}, {1, 1}, {0, 1} ]
+
+        rectshape = new OShape(self)
+        rectshape.AddPrimitive(@.GL_TRIANGLE_FAN, rectverts)
+        rectshape.alpha = 0.3
+
+        rectoutl = new OShape(self)
+        rectoutl.AddPrimitive(@.GL_LINE_LOOP, rectverts)
+        rectoutl.color = {1.0, 0.0, 0.0, 1.0}
+    endfunc
+endobject
+
+#if false
+func OTestScene.*Create(window : pointer):
+    inherited Create(window)
+
+    use *
+    background = {0.2, 0.2, 0.2, 1.0}
+
+    w1 = new OWidget(root)
+    w1.x = 10
+    w1.y = 10
+    w1.scalex = 200
+    w1.scaley = 50
+    //w1.color = {1.0, 0.0, 0.0, 0.4}
+
+    w2 = new OWidget(root)
+    w2.x = 400
+    w2.y = 10
+    w2.scalex = 300
+    w2.scaley = 50
+    //w2.color = {0.0, 1.0, 0.0, 0.4}
+
+endfunc
+#endif
+
+object OMainWindow(OWindow):
+
+endobject
+
+object OSecondWindow(OWindow):
+
+endobject
+
+
+//-----------------------------------------------------------------------------
+
+func *Main():
+    PrintLn('DQGUI Layout Test')
+
+    var win = new OMainWindow(800, 600, 'DQGUI Layout Test')
+    win.Show()
+
+    var win2 = new OSecondWindow(400, 300, 'Second Window')
+    win2.Show()
+
+    gui_app.Run()
+
+/*
+    while not win.ShouldClose():
+        win.Draw()
+        win.PollEvents()
+    endwhile
+*/
+    //gui_app.Terminate()
+endfunc

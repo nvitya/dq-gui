@@ -1,0 +1,30 @@
+
+use dqgui/ddgfx/openglutils
+use dqgui/ddgfx/ddgfx
+
+struct SSpacing:
+    left   : float32
+    right  : float32
+    top    : float32
+    bottom : float32
+endstruct
+
+object OWidget(ODrawGroup):
+public
+    parent : OWidget
+    scale  : float32 = 1
+    minw   : float32 = 20
+    minh   : float32 = 10
+
+    margin : SSpacing = {2, 2, 2, 2}
+    pad    : SSpacing = {2, 2, 2, 2}
+
+    // calculated sizes, x, y comes from ODrawGroup
+    width  : float32
+    height : float32
+
+    func *Create(aparent : OWidget):
+        inherited Create(aparent)
+    endfunc
+endobject
+
