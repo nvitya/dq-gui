@@ -103,9 +103,11 @@ func OWindow.*Create(awidth : int, aheight : int, atitle : rostr):
     width  = awidth
     height = aheight
 
+    @.gui_app.Init() // ensure that the gui_app is properly initialized
+
     scene = new ODdScene()
     scene.background = {0.2, 0.2, 0.2, 1.0}
-    //scene.root.AddChild(self) // must be removed
+    scene.root.AddChild(self) // must be removed before deleting the scene !
 endfunc
 
 func OWindow.*Destroy():
@@ -219,6 +221,8 @@ func OGuiApp.Init():
 
     // Restore the default for subsequently created application windows.
     GlfwWindowHint(GLFW_VISIBLE, GLFW_TRUE)
+
+    @.DdInitShaders()
 
     initialized = true
 endfunc

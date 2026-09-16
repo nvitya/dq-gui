@@ -224,6 +224,8 @@ endobject
 var g_colorProgram   : OColorProgram   = nil
 var g_textureProgram : OTextureProgram = nil
 
+func DdInitShaders() ..
+
 implementation
 
 func DdMatIdentity() -> SDdMatrix:
@@ -952,24 +954,17 @@ func ODdScene.*Create():
     use .
     root = new ODrawGroup(nil)
     projection = DdMatIdentity()
+
+    // ensure that the shaders are ready
+    DdInitShaders()  // the opengl context must be already set up for this
 endfunc
 
 func ODdScene.*Destroy():
     delete root
-    use .
-    //delete g_textureProgram = nil
-    //delete g_colorProgram = nil
 endfunc
 
 func ODdScene.BeginFrame(width : int, height : int):
     use *
-
-    if g_colorProgram == nil:
-        g_colorProgram = new OColorProgram()
-    endif
-    if g_textureProgram == nil:
-        g_textureProgram = new OTextureProgram()
-    endif
 
     GlEnable(GL_BLEND)
     GlBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -984,4 +979,13 @@ endfunc
 func ODdScene.EndFrame(window : pointer):
     use *
     GlfwSwapBuffers(window)
+endfunc
+
+func DdInitShaders():
+    if g_colorProgram == nil:
+        g_colorProgram = new OColorProgram()
+    endif
+    if g_textureProgram == nil:
+        g_textureProgram = new OTextureProgram()
+    endif
 endfunc

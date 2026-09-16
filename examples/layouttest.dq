@@ -138,8 +138,6 @@ endobject
 func *Main():
     PrintLn('DQGUI Layout Test')
 
-    gui_app.Init()
-
     var win = new OMainWindow(800, 600, 'DQGUI Layout Test')
     win.Show()
 
