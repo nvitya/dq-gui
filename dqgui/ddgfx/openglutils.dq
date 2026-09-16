@@ -9,6 +9,9 @@ endobject
 
 const GLFW_FALSE : int32 = 0
 const GLFW_TRUE  : int32 = 1
+const GLFW_RELEASE : int32 = 0
+const GLFW_PRESS   : int32 = 1
+const GLFW_REPEAT  : int32 = 2
 
 const(int32):
     GLFW_CONTEXT_VERSION_MAJOR = 0x00022002
@@ -50,8 +53,14 @@ const(int32):
 endconst
 
 type TGlfwWindow = pointer
-type TGlfwWindowRefreshCallback = func(window : TGlfwWindow)
 
+type TGlfwWindowRefreshCallback   = func(window : TGlfwWindow)
+type TGlfwFramebufferSizeCallback = func(window : TGlfwWindow, width : int32, height : int32)
+type TGlfwCursorPosCallback       = func(window : TGlfwWindow, x : float64, y : float64)
+type TGlfwMouseButtonCallback     = func(window : TGlfwWindow, button : int32, action : int32, mods : int32)
+type TGlfwWindowFocusCallback     = func(window : TGlfwWindow, focused : int32)
+type TGlfwKeyCallback             = func(window : TGlfwWindow, key : int32, scancode : int32, action : int32, mods : int32)
+type TGlfwCharCallback            = func(window : TGlfwWindow, codepoint : uint32)
 
 // GLFW's GLFWwindow is opaque to DQ.
 func GlfwInit() -> int32 [[external('glfwInit')]] ..
@@ -68,12 +77,28 @@ func GlfwPollEvents() [[external('glfwPollEvents')]] ..
 func GlfwWaitEvents() [[external('glfwWaitEvents')]] ..
 func GlfwWaitEventsTimeout(timeout : float64) [[external('glfwWaitEventsTimeout')]] ..
 func GlfwPostEmptyEvent() [[external('glfwPostEmptyEvent')]] ..
-func GlfwSetWindowRefreshCallback(window : TGlfwWindow,
-                                  callback : TGlfwWindowRefreshCallback) -> TGlfwWindowRefreshCallback [[external('glfwSetWindowRefreshCallback')]] ..
 func GlfwSwapBuffers(window : pointer) [[external('glfwSwapBuffers')]] ..
 func GlfwSwapInterval(interval : int32) [[external('glfwSwapInterval')]] ..
 func GlfwGetTime() -> float64 [[external('glfwGetTime')]] ..
 func GlfwGetFramebufferSize(window : pointer, width : ^int32, height : ^int32) [[external('glfwGetFramebufferSize')]] ..
+
+func GlfwSetWindowUserPointer(window : TGlfwWindow, value : pointer)  [[external('glfwSetWindowUserPointer')]] ..
+func GlfwGetWindowUserPointer(window : TGlfwWindow) -> pointer        [[external('glfwGetWindowUserPointer')]] ..
+
+func GlfwSetWindowRefreshCallback(window : TGlfwWindow,
+    callback : TGlfwWindowRefreshCallback) -> TGlfwWindowRefreshCallback      [[external('glfwSetWindowRefreshCallback')]] ..
+func GlfwSetFramebufferSizeCallback(window : TGlfwWindow,
+    callback : TGlfwFramebufferSizeCallback) -> TGlfwFramebufferSizeCallback  [[external('glfwSetFramebufferSizeCallback')]] ..
+func GlfwSetCursorPosCallback(window : TGlfwWindow,
+    callback : TGlfwCursorPosCallback) -> TGlfwCursorPosCallback              [[external('glfwSetCursorPosCallback')]] ..
+func GlfwSetMouseButtonCallback(window : TGlfwWindow,
+    callback : TGlfwMouseButtonCallback) -> TGlfwMouseButtonCallback          [[external('glfwSetMouseButtonCallback')]] ..
+func GlfwSetWindowFocusCallback(window : TGlfwWindow,
+    callback : TGlfwWindowFocusCallback) -> TGlfwWindowFocusCallback          [[external('glfwSetWindowFocusCallback')]] ..
+func GlfwSetKeyCallback(window : TGlfwWindow,
+    callback : TGlfwKeyCallback) -> TGlfwKeyCallback                          [[external('glfwSetKeyCallback')]] ..
+func GlfwSetCharCallback(window : TGlfwWindow,
+    callback : TGlfwCharCallback) -> TGlfwCharCallback                        [[external('glfwSetCharCallback')]] ..
 
 // OpenGL 1.x compatibility entry points. GLFW creates the context and makes
 // these symbols available through libGL on the Linux host target.

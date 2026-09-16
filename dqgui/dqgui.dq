@@ -21,6 +21,14 @@ object OWindow(OWidget):
     func Draw() ..
     func ShouldClose() -> bool ..
     func PollEvents() ..
+
+    func OnRefresh()  [[virtual]]:  endfunc
+    func OnResize(awidth : int32, aheight : int32)  [[virtual]]:  endfunc
+    func OnMouseMove(ax : float64, ay : float64)  [[virtual]]:  endfunc
+    func OnMouseButton(button : int32, action : int32, mods : int32)  [[virtual]]:  endfunc
+    func OnFocus(afocused : bool)  [[virtual]]:  endfunc
+    func OnKey(key : int32, scancode : int32, action : int32, mods : int32)  [[virtual]]:  endfunc
+    func OnChar(codepoint : uint32)  [[virtual]]:  endfunc
 endobject
 
 object OGuiApp:
@@ -65,19 +73,69 @@ func OWindow.*Destroy():
     inherited Destroy()
 endfunc
 
+func OWinFromGlfw(window : TGlfwWindow) -> OWindow  [[inline]]:
+    result = OWindow(GlfwGetWindowUserPointer(window))
+endfunc
+
+func GlfwCbWindowRefresh(window : TGlfwWindow):
+    var w :? = OWinFromGlfw(window)
+    w.OnRefresh()
+endfunc
+
+func GlfwCbResize(window : TGlfwWindow, width : int32, height : int32):
+    var w :? = OWinFromGlfw(window)
+    w.OnResize(width, height)
+endfunc
+
+func GlfwCbMouseMove(window : TGlfwWindow, x : float64, y : float64):
+    var w :? = OWinFromGlfw(window)
+    w.OnMouseMove(x, y)
+endfunc
+
+func GlfwCbMouseButton(window : TGlfwWindow, button : int32, action : int32, mods : int32):
+    var w :? = OWinFromGlfw(window)
+    w.OnMouseButton(button, action, mods)
+endfunc
+
+func GlfwCbWindowFocus(window : TGlfwWindow, focused : int32):
+    var w :? = OWinFromGlfw(window)
+    w.OnFocus(focused == GLFW_TRUE)
+endfunc
+
+func GlfwCbKey(window : TGlfwWindow, key : int32, scancode : int32, action : int32, mods : int32):
+    var w :? = OWinFromGlfw(window)
+    w.OnKey(key, scancode, action, mods)
+endfunc
+
+func GlfwCbChar(window : TGlfwWindow, codepoint : uint32):
+    var w :? = OWinFromGlfw(window)
+    w.OnChar(codepoint)
+endfunc
+
 func OWindow.Show():
+    use *
     if m_handle <> nil:
         return
     endif
 
-    @.gui_app.Init()  // checks if already initialized
+    gui_app.Init()  // checks if already initialized
 
-    m_handle = @.GlfwCreateWindow(Round(width), Round(height), m_title.pchar, nil, nil)
+    m_handle = GlfwCreateWindow(Round(width), Round(height), m_title.pchar, nil, nil)
     if m_handle == nil:
         raise EOpenGl('Could not create the OpenGL window')
     endif
+    // register the self object for the callbacks
+    GlfwSetWindowUserPointer(m_handle, pointer(self))
 
-    @.gui_app.AddWindow(self)
+    GlfwSetWindowRefreshCallback(m_handle, GlfwCbWindowRefresh)
+    GlfwSetFramebufferSizeCallback(m_handle, GlfwCbResize)
+    GlfwSetCursorPosCallback(m_handle, GlfwCbMouseMove)
+    GlfwSetMouseButtonCallback(m_handle, GlfwCbMouseButton)
+    GlfwSetWindowFocusCallback(m_handle, GlfwCbWindowFocus)
+    GlfwSetKeyCallback(m_handle, GlfwCbKey)
+    GlfwSetCharCallback(m_handle,GlfwCbChar)
+
+    gui_app.AddWindow(self)
 endfunc
 
 func OWindow.Hide():

@@ -64,7 +64,21 @@ endfunc
 #endif
 
 object OMainWindow(OWindow):
+    func OnResize(awidth : int32, aheight : int32)  [[override]]:
+        @.PrintLn('Resize: {}, {}', [awidth, aheight])
+    endfunc
 
+    func OnKey(key : int32, scancode : int32, action : int32, mods : int32)  [[override]]:
+        @.PrintLn('OnKey: key={}, scancode={}, action={}, mods={}', [key, scancode, action, mods])
+    endfunc
+
+    func OnChar(codepoint : uint32)  [[override]]:
+        @.PrintLn('OnChar: codepoint={:x}, char="{}"', [codepoint, @.StrFromWchars([wchar(codepoint)])])
+    endfunc
+
+    func OnMouseMove(ax : float64, ay : float64)  [[override]]:
+        //@.PrintLn('MouseMove: {}, {}', [ax, ay])
+    endfunc
 endobject
 
 object OSecondWindow(OWindow):
